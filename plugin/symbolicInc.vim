@@ -33,9 +33,11 @@ set cpo&vim
 "}}}
 
 nnoremap <silent> <Plug>(symbolicInc-increment)
-      \ :<C-u>call symbolicInc#increment()<CR>
+      \ :<C-u>call symbolicInc#increment()
+      \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-increment)")<CR>
 nnoremap <silent> <Plug>(symbolicInc-decrement)
-      \ :<C-u>call symbolicInc#decrement()<CR>
+      \ :<C-u>call symbolicInc#decrement()
+      \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-decrement)")<CR>
 
 nmap <C-a> <Plug>(symbolicInc-increment)
 nmap <C-x> <Plug>(symbolicInc-decrement)

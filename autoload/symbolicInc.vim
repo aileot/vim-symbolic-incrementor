@@ -14,21 +14,19 @@ function! symbolicInc#decrement() abort
 endfunction
 
 function! s:increment(cmd) abort
+  if a:cmd ==# "\<C-x>"
+    let op = '-'
+  elseif a:cmd ==# "\<C-a>"
+    let op = '+'
+  else
+    echoerr '[Symbolic Incrementor] Invalid argument:' a:cmd
+    return
+  endif
+
   let target = s:find_target()
   if len(target) == 0 | return | endif
   if target =~# '\d\+'
     exe 'norm!' a:cmd
-    return
-  endif
-
-  if a:cmd ==# "\<C-x>"
-    let op = '-'
-    silent! call repeat#set("\<Plug>(symbolicInc-decrement)")
-  elseif a:cmd ==# "\<C-a>"
-    let op = '+'
-    silent! call repeat#set("\<Plug>(symbolicInc-increment)")
-  else
-    echoerr '[Symbolic Incrementor] Invalid argument:' a:cmd
     return
   endif
 
