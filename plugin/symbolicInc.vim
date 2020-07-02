@@ -36,10 +36,10 @@ let g:symbolicInc#disable_integration_switch =
       \ get(g:, 'symbolicInc#disable_integration_switch', 0)
 
 nnoremap <silent> <Plug>(symbolicInc-increment)
-      \ :<C-u>call symbolicInc#increment()
+      \ :<C-u>call symbolicInc#increment(v:count1)
       \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-increment)")<CR>
 nnoremap <silent> <Plug>(symbolicInc-decrement)
-      \ :<C-u>call symbolicInc#decrement()
+      \ :<C-u>call symbolicInc#decrement(v:count1)
       \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-decrement)")<CR>
 
 nmap <C-a> <Plug>(symbolicInc-increment)

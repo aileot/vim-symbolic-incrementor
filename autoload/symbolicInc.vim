@@ -5,16 +5,16 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
-function! symbolicInc#increment() abort
-  call s:increment("\<C-a>")
+function! symbolicInc#increment(cnt) abort
+  call s:increment("\<C-a>", a:cnt)
 endfunction
 
-function! symbolicInc#decrement() abort
-  call s:increment("\<C-x>")
+function! symbolicInc#decrement(cnt) abort
+  call s:increment("\<C-x>", a:cnt)
 endfunction
 
-function! s:increment(cmd) abort
-  let cnt = v:count1
+function! s:increment(cmd, cnt) abort
+  let cnt = a:cnt
   let saveline = getline('.')
   call s:try_switch(a:cmd)
   if getline('.') !=# saveline | return | endif
