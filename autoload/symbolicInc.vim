@@ -51,10 +51,8 @@ function! s:increment(cmd) abort
   set ei+=TextYankPost
   set ei+=InsertEnter
   set ei+=InsertLeave
-  let @/ = target
   let num = char2nr(target)
   exe 'norm! r'. nr2char(eval(num . op . cnt))
-  call histdel('/', -1)
   let &eventignore = save_eventignore
 endfunction
 
