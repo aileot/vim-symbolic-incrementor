@@ -14,6 +14,7 @@ function! symbolicInc#decrement() abort
 endfunction
 
 function! s:increment(cmd) abort
+  let cnt = v:count1
   let saveline = getline('.')
   call s:try_switch(a:cmd)
   if getline('.') !=# saveline | return | endif
@@ -30,14 +31,14 @@ function! s:increment(cmd) abort
   let target = s:find_target()
   if len(target) == 0 | return | endif
   if target =~# '\d\+'
-    exe 'norm!' a:cmd
+    exe 'norm!' cnt . a:cmd
     return
   endif
 
   if target =~# '\a'
     let save_nrformats = &nrformats
     set nrformats=alpha
-    exe 'norm!' v:count1 .. a:cmd
+    exe 'norm!' cnt . a:cmd
     let &nrformats = save_nrformats
     return
   endif
@@ -52,7 +53,7 @@ function! s:increment(cmd) abort
   set ei+=InsertLeave
   let @/ = target
   let num = char2nr(target)
-  exe 'norm! r'. nr2char(eval(num .. op .. v:count1))
+  exe 'norm! r'. nr2char(eval(num . op . cnt))
   call histdel('/', -1)
   let &eventignore = save_eventignore
 endfunction
