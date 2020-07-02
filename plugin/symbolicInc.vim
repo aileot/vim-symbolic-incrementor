@@ -42,8 +42,10 @@ nnoremap <silent> <Plug>(symbolicInc-decrement)
       \ :<C-u>call symbolicInc#decrement(v:count1)
       \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-decrement)")<CR>
 
-nmap <C-a> <Plug>(symbolicInc-increment)
-nmap <C-x> <Plug>(symbolicInc-decrement)
+if !get(g:, 'symbolicInc#no_default_mappings')
+  nmap <C-a> <Plug>(symbolicInc-increment)
+  nmap <C-x> <Plug>(symbolicInc-decrement)
+endif
 
 " restore 'cpoptions' {{{1
 let &cpo = s:save_cpo
