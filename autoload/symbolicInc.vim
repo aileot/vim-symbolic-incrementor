@@ -14,6 +14,10 @@ function! symbolicInc#decrement() abort
 endfunction
 
 function! s:increment(cmd) abort
+  let saveline = getline('.')
+  call s:try_switch(a:cmd)
+  if getline('.') !=# saveline | return | endif
+
   if a:cmd ==# "\<C-x>"
     let op = '-'
   elseif a:cmd ==# "\<C-a>"
@@ -51,6 +55,21 @@ function! s:increment(cmd) abort
   exe 'norm! r'. nr2char(eval(num .. op .. v:count1))
   call histdel('/', -1)
   let &eventignore = save_eventignore
+endfunction
+
+function! s:try_switch(cmd) abort
+  if g:symbolicInc#disable_integration_switch | return | endif
+
+  try
+    if a:cmd ==? "\<C-a>"
+      Switch
+    elseif a:cmd ==? "\<C-x>"
+      SwitchReverse
+    endif
+
+  catch /^Vim\v%((\a+))?:E(464|492)/
+    let g:symbolicInc#disable_integration_switch = 1
+  endtry
 endfunction
 
 function! s:find_target() abort

@@ -32,6 +32,9 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+let g:symbolicInc#disable_integration_switch =
+      \ get(g:, 'symbolicInc#disable_integration_switch', 0)
+
 nnoremap <silent> <Plug>(symbolicInc-increment)
       \ :<C-u>call symbolicInc#increment()
       \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-increment)")<CR>
