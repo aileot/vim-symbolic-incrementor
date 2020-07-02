@@ -18,10 +18,10 @@ function! s:increment(cmd) abort
   call s:try_switch(a:cmd)
   if getline('.') !=# saveline | return | endif
 
-  if a:cmd ==# "\<C-x>"
-    let op = '-'
-  elseif a:cmd ==# "\<C-a>"
+  if a:cmd ==# "\<C-a>"
     let op = '+'
+  elseif a:cmd ==# "\<C-x>"
+    let op = '-'
   else
     echoerr '[Symbolic Incrementor] Invalid argument:' a:cmd
     return
