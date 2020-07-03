@@ -34,14 +34,7 @@ function! s:increment(cmd, cnt) abort
   call s:try_switch(a:cmd)
   if getline('.') !=# saveline | return | endif
 
-  if a:cmd ==# "\<C-a>"
-    let op = '+'
-  elseif a:cmd ==# "\<C-x>"
-    let op = '-'
-  else
-    echoerr '[Symbolic Incrementor] Invalid argument:' a:cmd
-    return
-  endif
+  let op = s:set_operator(a:cmd)
 
   let target = s:find_target()
   if len(target) == 0 | return | endif
@@ -84,6 +77,16 @@ function! s:try_switch(cmd) abort
   catch /^Vim\v%((\a+))?:E(464|492)/
     let g:symbolicInc#disable_integration_switch = 1
   endtry
+endfunction
+
+function! s:set_operator(cmd) abort
+  if a:cmd ==# "\<C-a>"
+    return '+'
+  elseif a:cmd ==# "\<C-x>"
+    return '-'
+  endif
+
+  throw '[Symbolic Incrementor] Invalid argument: '. a:cmd
 endfunction
 
 function! s:find_target() abort
