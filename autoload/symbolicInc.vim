@@ -5,6 +5,21 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+" List of special cases where the pattern regards a char as isolated, which
+" is different from the simple pattern '\<.\>':
+"     - one letter char beside underscore ('_') like `ptr_a` to `ptr_b`
+"     - any kind of quoted unicode char like '"あ"'
+"
+" List of chars to be ignored even when they look isolated:
+"     - escaped alphabet with a backslash ('\')
+"     - modifier prefix like, 'C' in '<C-x>' or 'A' in <A-j>'
+"     - prefix for variables' scope of Vimscript like g:, s:, l:
+"     - alphabet after apostrophe like `don't` or `it's`, which is detected
+"       by s:is_abbr() in s:find_in_line()
+let s:pat_isolated = '\v([''"])\zs[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]\ze\1'
+      \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
+      \ .'|'. '\d'
+
 function! symbolicInc#increment(cnt) abort
   call s:increment("\<C-a>", a:cnt)
 endfunction
@@ -78,24 +93,9 @@ function! s:find_target() abort
     return getline('.')[col('.') - 1]
   endif
 
-  " List of special cases where the pattern regards a char as isolated, which
-  " is different from the simple pattern '\<.\>':
-  "     - one letter char beside underscore ('_') like `ptr_a` to `ptr_b`
-  "     - any kind of quoted unicode char like '"あ"'
-  "
-  " List of chars to be ignored even when they look isolated:
-  "     - escaped alphabet with a backslash ('\')
-  "     - modifier prefix like, 'C' in '<C-x>' or 'A' in <A-j>'
-  "     - prefix for variables' scope of Vimscript like g:, s:, l:
-  "     - alphabet after apostrophe like `don't` or `it's`, which is detected
-  "       by s:is_abbr() in s:find_in_line()
-  let pat_isolated = '\v([''"])\zs[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]\ze\1'
-        \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
-        \ .'|'. '\d'
-
   let is_found = 0
   for direction in ['forward', 'backward']
-    if s:find_in_line(pat_isolated, direction)
+    if s:find_in_line(s:pat_isolated, direction)
       let is_found = 1
       break
     endif
@@ -103,10 +103,10 @@ function! s:find_target() abort
 
   " Exclude characters after current column to get pattern.
   if is_found
-    let ret = matchstr(getline('.')[:col('.') - 1], '.*'. pat_isolated)
+    let ret = matchstr(getline('.')[:col('.') - 1], '.*'. s:pat_isolated)
     " The '+2' is for unicode
     return len(ret) == 0
-          \ ? matchstr(getline('.')[:col('.') + 2], '.*'. pat_isolated)
+          \ ? matchstr(getline('.')[:col('.') + 2], '.*'. s:pat_isolated)
           \ : ret
   endif
 
