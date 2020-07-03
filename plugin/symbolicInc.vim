@@ -32,12 +32,17 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+let g:symbolicInc#disable_integration_repeat_undojoin =
+      \ get(g:, 'symbolicInc#disable_integration_repeat_undojoin', 0)
 let g:symbolicInc#disable_integration_switch =
       \ get(g:, 'symbolicInc#disable_integration_switch', 0)
 
 function! s:set_repeat(map_name) abort
-  let map_name = "\<Plug>(symbolicInc-". a:map_name .')'
-  silent! call repeat#set(map_name)
+  let map_name = g:symbolicInc#disable_integration_repeat_undojoin
+        \ ? a:map_name
+        \ : a:map_name .'-undojoin'
+  let sequence = "\<Plug>(symbolicInc-". map_name .')'
+  silent! call repeat#set(sequence)
 endfunction
 
 nnoremap <silent> <Plug>(symbolicInc-increment)
@@ -53,6 +58,16 @@ nnoremap <silent> <Plug>(symbolicInc-increment-sync)
 nnoremap <silent> <Plug>(symbolicInc-decrement-sync)
       \ :<C-u>call symbolicInc#decrement_sync(v:count1)
       \ <bar> call <SID>set_repeat('decrement-sync')<CR>
+
+nmap <silent> <Plug>(symbolicInc-increment-undojoin)
+      \ :<C-u>undojoin<CR><Plug>(symbolicInc-increment):<C-u>call <SID>set_repeat('increment')<CR>
+nmap <silent> <Plug>(symbolicInc-decrement-undojoin)
+      \ :<C-u>undojoin<CR><Plug>(symbolicInc-decrement):<C-u>call <SID>set_repeat('decrement')<CR>
+
+nmap <silent> <Plug>(symbolicInc-increment-sync-undojoin)
+      \ :<C-u>undojoin<CR><Plug>(symbolicInc-increment-sync):<C-u>call <SID>set_repeat('increment-sync')<CR>
+nmap <silent> <Plug>(symbolicInc-decrement-sync-undojoin)
+      \ :<C-u>undojoin<CR><Plug>(symbolicInc-decrement-sync):<C-u>call <SID>set_repeat('decrement-sync')<CR>
 
 if !get(g:, 'symbolicInc#no_default_mappings')
   nmap <C-a> <Plug>(symbolicInc-increment)
