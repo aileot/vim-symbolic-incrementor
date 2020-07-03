@@ -15,10 +15,15 @@ set cpo&vim
 "     - modifier prefix like, 'C' in '<C-x>' or 'A' in <A-j>'
 "     - prefix for variables' scope of Vimscript like g:, s:, l:
 "     - alphabet after apostrophe like `don't` or `it's`, which is detected
-"       by s:is_abbr() in s:find_in_line()
-let s:pat_isolated = '\v([''"])\zs[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]\ze\1'
+"       by s:is_abbr() in s:find_in_line(
+"
+" Note: Evade such atoms as '\1' which could cause trouble joining somewhere.
+" Note: Keep to add '\v' on the head of each patterns easier to check.
+let s:unicode = '\v[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]'
+let s:pat_isolated = '\v\d'
+      \ .'|'. '\v(\v"\zs'.  s:unicode .'\ze")'
+      \ .'|'. '\v(\v''\zs'. s:unicode .'\ze'')'
       \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
-      \ .'|'. '\d'
 
 function! symbolicInc#increment(cnt) abort
   call s:increment("\<C-a>", a:cnt)
