@@ -26,10 +26,22 @@ let s:pat_isolated = '\v\d'
       \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
 
 function! symbolicInc#increment(cnt) abort
+  let s:sync = 0
   call s:increment("\<C-a>", a:cnt)
 endfunction
 
 function! symbolicInc#decrement(cnt) abort
+  let s:sync = 0
+  call s:increment("\<C-x>", a:cnt)
+endfunction
+
+function! symbolicInc#increment_sync(cnt) abort
+  let s:sync = 1
+  call s:increment("\<C-a>", a:cnt)
+endfunction
+
+function! symbolicInc#decrement_sync(cnt) abort
+  let s:sync = 1
   call s:increment("\<C-x>", a:cnt)
 endfunction
 
@@ -48,24 +60,22 @@ function! s:increment(cmd, cnt) abort
     return
   endif
 
-  if target =~# '\a'
-    let save_nrformats = &nrformats
-    set nrformats=alpha
-    exe 'norm!' cnt . a:cmd
-    let &nrformats = save_nrformats
-    return
-  endif
-
-  " Ref: Increment any other characters than ascii.
-  " https://github.com/monaqa/dotfiles/blob/32f70b3f92d75eaab07a33f8bf28ee17927476e8/.config/nvim/init.vim#L950-L960
   let save_eventignore = &eventignore
   set eventignore=
-  set ei+=TextChangedI
-  set ei+=TextYankPost
-  set ei+=InsertEnter
-  set ei+=InsertLeave
+  set ei+=TextChanged
+
   let num = char2nr(target)
-  exe 'norm! r'. nr2char(eval(num . op . cnt))
+  " Ref: Increment any other characters than ascii.
+  " https://github.com/monaqa/dotfiles/blob/32f70b3f92d75eaab07a33f8bf28ee17927476e8/.config/nvim/init.vim#L950-L960
+  let new_char = nr2char(eval(num . op . cnt))
+  let new_char = s:set_sane_new_char(target, new_char)
+
+  if !s:sync
+    exe 'norm! r'. new_char
+  else
+    call s:_increment_sync(target, new_char)
+  endif
+
   let &eventignore = save_eventignore
 endfunction
 
@@ -148,6 +158,34 @@ function! s:find_in_line(pat, direction) abort
 
   call winrestview(save_view)
   return 0
+endfunction
+
+function! s:set_sane_new_char(old_char, new_char) abort
+  let new_char = a:new_char
+
+  " If target is smaller than a, new_char is 'a'; if just 'a', new_char is 'z'.
+  " That is, 'a' decrements to 'z'; 'Z' increments to 'A'.
+  if a:old_char =~# '\l' && new_char =~# '\L'
+    let new_char = a:old_char ==# 'a' ? 'z' : 'a'
+    if new_char > a:old_char
+      let new_char = a:old_char ==# 'a' ? 'z' : 'a'
+    endif
+
+  elseif a:old_char =~# '\u' && new_char =~# '\U'
+    let new_char = a:old_char ==# 'A' ? 'Z' : 'A'
+    if new_char < a:old_char
+      let new_char = a:old_char ==# 'A' ? 'A' : 'Z'
+    endif
+  endif
+
+  return new_char
+endfunction
+
+function! s:_increment_sync(old_char, new_char) abort
+  let save_view = winsaveview()
+  let pat = '\v('. s:pat_isolated .')' .'&'. a:old_char .'\C'
+  exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
+  call winrestview(save_view)
 endfunction
 
 " restore 'cpoptions' {{{1
