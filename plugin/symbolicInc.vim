@@ -37,6 +37,12 @@ let g:symbolicInc#disable_integration_repeat_undojoin =
 let g:symbolicInc#disable_integration_switch =
       \ get(g:, 'symbolicInc#disable_integration_switch', 0)
 
+function! s:symbolicInc(map_name) abort
+  let map_name = substitute(a:map_name, '-', '_', 'g')
+  call symbolicInc#{map_name}(v:count1)
+  call s:set_repeat(a:map_name)
+endfunction
+
 function! s:set_repeat(map_name) abort
   let map_name = g:symbolicInc#disable_integration_repeat_undojoin
         \ ? a:map_name
@@ -46,23 +52,14 @@ function! s:set_repeat(map_name) abort
 endfunction
 
 nnoremap <silent> <Plug>(symbolicInc-increment)
-      \ :<C-u>call symbolicInc#increment(v:count1)
-      \ <bar> call <SID>set_repeat('increment')<CR>
+      \ :<C-u>call <SID>symbolicInc('increment')<CR>
 nnoremap <silent> <Plug>(symbolicInc-decrement)
-      \ :<C-u>call symbolicInc#decrement(v:count1)
-      \ <bar> call <SID>set_repeat('decrement')<CR>
+      \ :<C-u>call <SID>symbolicInc('decrement')<CR>
 
 nnoremap <silent> <Plug>(symbolicInc-increment-sync)
-      \ :<C-u>call symbolicInc#increment_sync(v:count1)
-      \ <bar> call <SID>set_repeat('increment-sync')<CR>
+      \ :<C-u>call <SID>symbolicInc('increment-sync')<CR>
 nnoremap <silent> <Plug>(symbolicInc-decrement-sync)
-      \ :<C-u>call symbolicInc#decrement_sync(v:count1)
-      \ <bar> call <SID>set_repeat('decrement-sync')<CR>
-
-nmap <silent> <Plug>(symbolicInc-increment-undojoin)
-      \ :<C-u>undojoin<CR><Plug>(symbolicInc-increment):<C-u>call <SID>set_repeat('increment')<CR>
-nmap <silent> <Plug>(symbolicInc-decrement-undojoin)
-      \ :<C-u>undojoin<CR><Plug>(symbolicInc-decrement):<C-u>call <SID>set_repeat('decrement')<CR>
+      \ :<C-u>call <SID>symbolicInc('decrement-sync')<CR>
 
 nmap <silent> <Plug>(symbolicInc-increment-sync-undojoin)
       \ :<C-u>undojoin<CR><Plug>(symbolicInc-increment-sync):<C-u>call <SID>set_repeat('increment-sync')<CR>
