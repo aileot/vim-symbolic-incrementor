@@ -51,6 +51,19 @@ function! s:set_repeat(map_name) abort
   silent! call repeat#set(sequence)
 endfunction
 
+function! s:undojoinable(map_name) abort
+  " TODO: make it dot repeatable even after <undo>.
+
+  let ut = undotree()
+  if ut.seq_cur == ut.seq_last
+    undojoin
+  endif
+
+  let modify = substitute(a:map_name, '-', '_', 'g')
+  call symbolicInc#{modify}(v:count1)
+  call s:set_repeat(a:map_name)
+endfunction
+
 nnoremap <silent> <Plug>(symbolicInc-increment)
       \ :<C-u>call <SID>symbolicInc('increment')<CR>
 nnoremap <silent> <Plug>(symbolicInc-decrement)
@@ -61,10 +74,17 @@ nnoremap <silent> <Plug>(symbolicInc-increment-sync)
 nnoremap <silent> <Plug>(symbolicInc-decrement-sync)
       \ :<C-u>call <SID>symbolicInc('decrement-sync')<CR>
 
-nmap <silent> <Plug>(symbolicInc-increment-sync-undojoin)
-      \ :<C-u>undojoin<CR><Plug>(symbolicInc-increment-sync):<C-u>call <SID>set_repeat('increment-sync')<CR>
-nmap <silent> <Plug>(symbolicInc-decrement-sync-undojoin)
-      \ :<C-u>undojoin<CR><Plug>(symbolicInc-decrement-sync):<C-u>call <SID>set_repeat('decrement-sync')<CR>
+
+" These mappings <Plug>(foo-undojoin) below are only for internal usage.
+nnoremap <silent> <Plug>(symbolicInc-increment-undojoin)
+      \ :<C-u>call <SID>undojoinable('increment')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-undojoin)
+      \ :<C-u>call <SID>undojoinable('decrement')<CR>
+
+nnoremap <silent> <Plug>(symbolicInc-increment-sync-undojoin)
+      \ :<C-u>call <SID>undojoinable('increment-sync')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-sync-undojoin)
+      \ :<C-u>call <SID>undojoinable('decrement-sync')<CR>
 
 if !get(g:, 'symbolicInc#no_default_mappings')
   nmap <C-a> <Plug>(symbolicInc-increment)
