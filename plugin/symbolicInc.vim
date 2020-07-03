@@ -42,9 +42,18 @@ nnoremap <silent> <Plug>(symbolicInc-decrement)
       \ :<C-u>call symbolicInc#decrement(v:count1)
       \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-decrement)")<CR>
 
+nnoremap <silent> <Plug>(symbolicInc-increment-sync)
+      \ :<C-u>call symbolicInc#increment_sync(v:count1)
+      \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-increment-sync)")<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-sync)
+      \ :<C-u>call symbolicInc#decrement_sync(v:count1)
+      \ <bar> silent! call repeat#set("\<lt>Plug>(symbolicInc-decrement-sync)")<CR>
+
 if !get(g:, 'symbolicInc#no_default_mappings')
   nmap <C-a> <Plug>(symbolicInc-increment)
   nmap <C-x> <Plug>(symbolicInc-decrement)
+  nmap g<C-a> <Plug>(symbolicInc-increment-sync)
+  nmap g<C-x> <Plug>(symbolicInc-decrement-sync)
 endif
 
 " restore 'cpoptions' {{{1
