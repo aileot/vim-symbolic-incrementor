@@ -50,7 +50,7 @@ This is recommended in lazy load:
 ```toml
 [[plugin]]
 repo = 'kaile256/vim-symbolic-incrementor'
-on_map {n = '<Plug>(symbolicInc-'}
+on_map = {n = '<Plug>(symbolicInc-'}
 on_func = 'symbolicInc#'
 ```
 
