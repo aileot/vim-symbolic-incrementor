@@ -121,11 +121,7 @@ function! s:find_target() abort
 
   " Exclude characters after current column to get pattern.
   if is_found
-    let ret = matchstr(getline('.')[:col('.') - 1], '.*'. s:pat_isolated)
-    " The '+2' is for unicode
-    return len(ret) == 0
-          \ ? matchstr(getline('.')[:col('.') + 2], '.*'. s:pat_isolated)
-          \ : ret
+    return s:get_cursor_char()
   endif
 
   return ''
@@ -158,6 +154,16 @@ function! s:find_in_line(pat, direction) abort
 
   call winrestview(save_view)
   return 0
+endfunction
+
+function! s:get_cursor_char() abort
+  let cursor = matchstr(getline('.'), '.\%'. (col('.') + 1) .'c')
+  if len(cursor) == 0
+    " The '+2' is for unicode
+    let cursor = matchstr(getline('.'), '.\%'. (col('.') + 3) .'c')
+  endif
+
+  return cursor
 endfunction
 
 function! s:set_sane_new_char(old_char, new_char) abort
