@@ -189,9 +189,7 @@ endfunction
 
 function! s:_increment_sync(old_char, new_char) abort "{{{2
   let save_view = winsaveview()
-  " Tips: Use '*' to get all the same letters in s:pat_isolated;
-  " '\&', or '\v&', is useless to get 'A' in 'foo_A'.
-  let pat = '\v('. s:pat_isolated .')' .'*'. a:old_char .'\C'
+  let pat = '\v('. s:pat_isolated .')' .'&'. a:old_char .'\C'
   exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
   call winrestview(save_view)
 endfunction
