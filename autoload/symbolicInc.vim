@@ -5,54 +5,103 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
-function! symbolicInc#increment() abort
-  call s:increment("\<C-a>")
+" List of special cases where the pattern regards a char as isolated, which
+" is different from the simple pattern '\<.\>':
+"     - one letter char beside underscore ('_') like `ptr_a` to `ptr_b`
+"     - any kind of quoted unicode char like '"あ"'
+"
+" List of chars to be ignored even when they look isolated:
+"     - escaped alphabet with a backslash ('\')
+"     - modifier prefix like, 'C' in '<C-x>' or 'A' in <A-j>'
+"     - prefix for variables' scope of Vimscript like g:, s:, l:
+"     - alphabet after apostrophe like `don't` or `it's`, which is detected
+"       by s:is_abbr() in s:find_in_line(
+"
+" Note: Evade such atoms as '\1' which could cause trouble joining somewhere.
+" Note: Keep to add '\v' on the head of each patterns easier to check.
+let s:unicode = '\v[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]'
+let s:pat_isolated = '\v\d'
+      \ .'|'. '\v(\v"\zs'.  s:unicode .'\ze")'
+      \ .'|'. '\v(\v''\zs'. s:unicode .'\ze'')'
+      \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
+
+function! symbolicInc#increment(cnt) abort
+  let s:sync = 0
+  call s:increment("\<C-a>", a:cnt)
 endfunction
 
-function! symbolicInc#decrement() abort
-  call s:increment("\<C-x>")
+function! symbolicInc#decrement(cnt) abort
+  let s:sync = 0
+  call s:increment("\<C-x>", a:cnt)
 endfunction
 
-function! s:increment(cmd) abort
+function! symbolicInc#increment_sync(cnt) abort
+  let s:sync = 1
+  call s:increment("\<C-a>", a:cnt)
+endfunction
+
+function! symbolicInc#decrement_sync(cnt) abort
+  let s:sync = 1
+  call s:increment("\<C-x>", a:cnt)
+endfunction
+
+function! s:increment(cmd, cnt) abort
+  let cnt = a:cnt
+  let saveline = getline('.')
+  call s:try_switch(a:cmd)
+  if getline('.') !=# saveline | return | endif
+
+  let op = s:set_operator(a:cmd)
+
   let target = s:find_target()
   if len(target) == 0 | return | endif
   if target =~# '\d\+'
-    exe 'norm!' a:cmd
+    exe 'norm!' cnt . a:cmd
     return
   endif
 
-  if a:cmd ==# "\<C-x>"
-    let op = '-'
-    silent! call repeat#set("\<Plug>(symbolicInc-decrement)")
-  elseif a:cmd ==# "\<C-a>"
-    let op = '+'
-    silent! call repeat#set("\<Plug>(symbolicInc-increment)")
-  else
-    echoerr '[Symbolic Incrementor] Invalid argument:' a:cmd
-    return
-  endif
-
-  if target =~# '\a'
-    let save_nrformats = &nrformats
-    set nrformats=alpha
-    exe 'norm!' v:count1 .. a:cmd
-    let &nrformats = save_nrformats
-    return
-  endif
-
-  " Ref: Increment any other characters than ascii.
-  " https://github.com/monaqa/dotfiles/blob/32f70b3f92d75eaab07a33f8bf28ee17927476e8/.config/nvim/init.vim#L950-L960
   let save_eventignore = &eventignore
   set eventignore=
-  set ei+=TextChangedI
-  set ei+=TextYankPost
-  set ei+=InsertEnter
-  set ei+=InsertLeave
-  let @/ = target
+  set ei+=TextChanged
+
   let num = char2nr(target)
-  exe 'norm! r'. nr2char(eval(num .. op .. v:count1))
-  call histdel('/', -1)
+  " Ref: Increment any other characters than ascii.
+  " https://github.com/monaqa/dotfiles/blob/32f70b3f92d75eaab07a33f8bf28ee17927476e8/.config/nvim/init.vim#L950-L960
+  let new_char = nr2char(eval(num . op . cnt))
+  let new_char = s:set_sane_new_char(target, new_char)
+
+  if !s:sync
+    exe 'norm! r'. new_char
+  else
+    call s:_increment_sync(target, new_char)
+  endif
+
   let &eventignore = save_eventignore
+endfunction
+
+function! s:try_switch(cmd) abort
+  if g:symbolicInc#disable_integration_switch | return | endif
+
+  try
+    if a:cmd ==? "\<C-a>"
+      Switch
+    elseif a:cmd ==? "\<C-x>"
+      SwitchReverse
+    endif
+
+  catch /^Vim\v%((\a+))?:E(464|492)/
+    let g:symbolicInc#disable_integration_switch = 1
+  endtry
+endfunction
+
+function! s:set_operator(cmd) abort
+  if a:cmd ==# "\<C-a>"
+    return '+'
+  elseif a:cmd ==# "\<C-x>"
+    return '-'
+  endif
+
+  throw '[Symbolic Incrementor] Invalid argument: '. a:cmd
 endfunction
 
 function! s:find_target() abort
@@ -62,24 +111,9 @@ function! s:find_target() abort
     return getline('.')[col('.') - 1]
   endif
 
-  " List of special cases where the pattern regards a char as isolated, which
-  " is different from the simple pattern '\<.\>':
-  "     - one letter char beside underscore ('_') like `ptr_a` to `ptr_b`
-  "     - any kind of quoted unicode char like '"あ"'
-  "
-  " List of chars to be ignored even when they look isolated:
-  "     - escaped alphabet with a backslash ('\')
-  "     - modifier prefix like, 'C' in '<C-x>' or 'A' in <A-j>'
-  "     - prefix for variables' scope of Vimscript like g:, s:, l:
-  "     - alphabet after apostrophe like `don't` or `it's`, which is detected
-  "       by s:is_abbr() in s:find_in_line()
-  let pat_isolated = '\v([''"])\zs[^][./\?|<>;:''"-=_+`~!@#$%^&*(){}]\ze\1'
-        \ .'|'. '\v((<([\<\\])@<!|_\zs)\a:@!(\ze_|>))'
-        \ .'|'. '\d'
-
   let is_found = 0
   for direction in ['forward', 'backward']
-    if s:find_in_line(pat_isolated, direction)
+    if s:find_in_line(s:pat_isolated, direction)
       let is_found = 1
       break
     endif
@@ -87,10 +121,10 @@ function! s:find_target() abort
 
   " Exclude characters after current column to get pattern.
   if is_found
-    let ret = matchstr(getline('.')[:col('.') - 1], '.*'. pat_isolated)
+    let ret = matchstr(getline('.')[:col('.') - 1], '.*'. s:pat_isolated)
     " The '+2' is for unicode
     return len(ret) == 0
-          \ ? matchstr(getline('.')[:col('.') + 2], '.*'. pat_isolated)
+          \ ? matchstr(getline('.')[:col('.') + 2], '.*'. s:pat_isolated)
           \ : ret
   endif
 
@@ -124,6 +158,34 @@ function! s:find_in_line(pat, direction) abort
 
   call winrestview(save_view)
   return 0
+endfunction
+
+function! s:set_sane_new_char(old_char, new_char) abort
+  let new_char = a:new_char
+
+  " If target is smaller than a, new_char is 'a'; if just 'a', new_char is 'z'.
+  " That is, 'a' decrements to 'z'; 'Z' increments to 'A'.
+  if a:old_char =~# '\l' && new_char =~# '\L'
+    let new_char = a:old_char ==# 'a' ? 'z' : 'a'
+    if new_char > a:old_char
+      let new_char = a:old_char ==# 'a' ? 'z' : 'a'
+    endif
+
+  elseif a:old_char =~# '\u' && new_char =~# '\U'
+    let new_char = a:old_char ==# 'A' ? 'Z' : 'A'
+    if new_char < a:old_char
+      let new_char = a:old_char ==# 'A' ? 'A' : 'Z'
+    endif
+  endif
+
+  return new_char
+endfunction
+
+function! s:_increment_sync(old_char, new_char) abort
+  let save_view = winsaveview()
+  let pat = '\v('. s:pat_isolated .')' .'&'. a:old_char .'\C'
+  exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
+  call winrestview(save_view)
 endfunction
 
 " restore 'cpoptions' {{{1

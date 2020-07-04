@@ -32,13 +32,66 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
-nnoremap <silent> <Plug>(symbolicInc-increment)
-      \ :<C-u>call symbolicInc#increment()<CR>
-nnoremap <silent> <Plug>(symbolicInc-decrement)
-      \ :<C-u>call symbolicInc#decrement()<CR>
+let g:symbolicInc#disable_integration_repeat_undojoin =
+      \ get(g:, 'symbolicInc#disable_integration_repeat_undojoin', 0)
+let g:symbolicInc#disable_integration_switch =
+      \ get(g:, 'symbolicInc#disable_integration_switch', 0)
 
-nmap <C-a> <Plug>(symbolicInc-increment)
-nmap <C-x> <Plug>(symbolicInc-decrement)
+function! s:symbolicInc(map_name) abort
+  let map_name = substitute(a:map_name, '-', '_', 'g')
+  call symbolicInc#{map_name}(v:count1)
+  call s:set_repeat(a:map_name)
+endfunction
+
+function! s:set_repeat(map_name) abort
+  let map_name = g:symbolicInc#disable_integration_repeat_undojoin
+        \ ? a:map_name
+        \ : a:map_name .'-undojoin'
+  let sequence = "\<Plug>(symbolicInc-". map_name .')'
+  silent! call repeat#set(sequence)
+endfunction
+
+function! s:undojoinable(map_name) abort
+  " TODO: make it dot repeatable even after <undo>.
+
+  let ut = undotree()
+  if ut.seq_cur == ut.seq_last
+    undojoin
+  endif
+
+  let modify = substitute(a:map_name, '-', '_', 'g')
+  call symbolicInc#{modify}(v:count1)
+  call s:set_repeat(a:map_name)
+endfunction
+
+nnoremap <silent> <Plug>(symbolicInc-increment)
+      \ :<C-u>call <SID>symbolicInc('increment')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement)
+      \ :<C-u>call <SID>symbolicInc('decrement')<CR>
+
+nnoremap <silent> <Plug>(symbolicInc-increment-sync)
+      \ :<C-u>call <SID>symbolicInc('increment-sync')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-sync)
+      \ :<C-u>call <SID>symbolicInc('decrement-sync')<CR>
+
+
+" These mappings <Plug>(foo-undojoin) below are only for internal usage.
+nnoremap <silent> <Plug>(symbolicInc-increment-undojoin)
+      \ :<C-u>call <SID>undojoinable('increment')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-undojoin)
+      \ :<C-u>call <SID>undojoinable('decrement')<CR>
+
+nnoremap <silent> <Plug>(symbolicInc-increment-sync-undojoin)
+      \ :<C-u>call <SID>undojoinable('increment-sync')<CR>
+nnoremap <silent> <Plug>(symbolicInc-decrement-sync-undojoin)
+      \ :<C-u>call <SID>undojoinable('decrement-sync')<CR>
+
+if !get(g:, 'symbolicInc#no_default_mappings')
+  nmap <C-a> <Plug>(symbolicInc-increment)
+  nmap <C-x> <Plug>(symbolicInc-decrement)
+  nmap g<C-a> <Plug>(symbolicInc-increment-sync)
+  nmap g<C-x> <Plug>(symbolicInc-decrement-sync)
+endif
 
 " restore 'cpoptions' {{{1
 let &cpo = s:save_cpo
