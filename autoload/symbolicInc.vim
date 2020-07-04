@@ -189,7 +189,8 @@ endfunction
 
 function! s:_increment_sync(old_char, new_char) abort "{{{2
   let save_view = winsaveview()
-  let pat = '\v('. s:pat_isolated .')' .'&'. a:old_char .'\C'
+  " Tips: '/\&', or '/\v&', with s:pat_isolated fails to get 'A' in 'foo_A'.
+  let pat = '\v('. s:pat_isolated .')' .'&_?\zs'. a:old_char .'\C'
   exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
   call winrestview(save_view)
 endfunction
