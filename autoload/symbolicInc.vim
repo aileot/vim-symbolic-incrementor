@@ -45,7 +45,7 @@ function! symbolicInc#decrement_sync(cnt) abort
   call s:increment("\<C-x>", a:cnt)
 endfunction
 
-function! s:increment(cmd, cnt) abort
+function! s:increment(cmd, cnt) abort "{{{1
   let cnt = a:cnt
   let saveline = getline('.')
   call s:try_switch(a:cmd)
@@ -79,7 +79,7 @@ function! s:increment(cmd, cnt) abort
   let &eventignore = save_eventignore
 endfunction
 
-function! s:try_switch(cmd) abort
+function! s:try_switch(cmd) abort "{{{2
   if g:symbolicInc#disable_integration_switch | return | endif
 
   try
@@ -94,7 +94,7 @@ function! s:try_switch(cmd) abort
   endtry
 endfunction
 
-function! s:set_operator(cmd) abort
+function! s:set_operator(cmd) abort "{{{2
   if a:cmd ==# "\<C-a>"
     return '+'
   elseif a:cmd ==# "\<C-x>"
@@ -104,7 +104,7 @@ function! s:set_operator(cmd) abort
   throw '[Symbolic Incrementor] Invalid argument: '. a:cmd
 endfunction
 
-function! s:find_target() abort
+function! s:find_target() abort "{{{2
   let save_view = winsaveview()
   " Return true if cursor is on the very position that escaped alphabet char.
   if searchpos('\\\zs\a', 'cWn') == [save_view['lnum'], save_view['col'] + 1]
@@ -127,7 +127,7 @@ function! s:find_target() abort
   return ''
 endfunction
 
-function! s:find_in_line(pat, direction) abort
+function! s:find_in_line(pat, direction) abort "{{{2
   let save_view = winsaveview()
   let flags = 'W'
   if a:direction ==# 'backward'
@@ -166,7 +166,7 @@ function! s:get_cursor_char() abort
   return cursor
 endfunction
 
-function! s:set_sane_new_char(old_char, new_char) abort
+function! s:set_sane_new_char(old_char, new_char) abort "{{{2
   let new_char = a:new_char
 
   " If target is smaller than a, new_char is 'a'; if just 'a', new_char is 'z'.
@@ -187,7 +187,7 @@ function! s:set_sane_new_char(old_char, new_char) abort
   return new_char
 endfunction
 
-function! s:_increment_sync(old_char, new_char) abort
+function! s:_increment_sync(old_char, new_char) abort "{{{2
   let save_view = winsaveview()
   let pat = '\v('. s:pat_isolated .')' .'&'. a:old_char .'\C'
   exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
