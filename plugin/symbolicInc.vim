@@ -32,6 +32,8 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+let g:symbolicInc#disable_sync_exclusive =
+      \ get(g:, 'symbolicInc#disable_sync_exclusive', 0)
 let g:symbolicInc#disable_integration_repeat_undojoin =
       \ get(g:, 'symbolicInc#disable_integration_repeat_undojoin', 0)
 let g:symbolicInc#disable_integration_switch =

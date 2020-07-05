@@ -5,6 +5,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+let s:save_pos = []
 " List of special cases where the pattern regards a char as isolated, which
 " is different from the simple pattern '\<.\>':
 "     - one letter char beside underscore ('_') like `ptr_a` to `ptr_b`
@@ -190,8 +191,37 @@ endfunction
 function! s:_increment_sync(old_char, new_char) abort "{{{2
   let save_view = winsaveview()
   " Tips: '/\&', or '/\v&', with s:pat_isolated fails to get 'A' in 'foo_A'.
-  let pat = '\v('. s:pat_isolated .')' .'&_?\zs'. a:old_char .'\C'
-  exe 'keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/g'
+  let pat = '\v('. s:pat_isolated .')' .'&.?\zs'. a:old_char .'\C'
+
+  if !g:symbolicInc#disable_sync_exclusive
+        \ && getcurpos() == s:save_pos
+        \ && a:old_char =~# '\a'
+    call s:_increment_saved_col(a:new_char)
+  else
+    call s:save_sync_pos(pat)
+    exe 'silent! keepjumps keeppatterns s/'. pat .'/'. a:new_char .'/ge'
+  endif
+
+  call winrestview(save_view)
+endfunction
+
+function! s:save_sync_pos(pattern) abort
+  if g:symbolicInc#disable_sync_exclusive | return | endif
+
+  let s:save_pos = getcurpos()
+  let s:match_cols = []
+  let col = matchstrpos(getline('.'), a:pattern)[1]
+  while col != -1
+    call add(s:match_cols, col + 2)
+    let col = matchstrpos(getline('.'), a:pattern, col + 1)[1]
+  endwhile
+endfunction
+
+function! s:_increment_saved_col(new_char) abort
+  let save_view = winsaveview()
+  for col in s:match_cols
+    exe 'silent! keepjumps keeppatterns s/.\%'. col .'c/'. a:new_char .'/e'
+  endfor
   call winrestview(save_view)
 endfunction
 
