@@ -180,7 +180,7 @@ function! s:set_sane_new_char(old_char, new_char) abort "{{{2
   elseif a:old_char =~# '\u' && new_char =~# '\U'
     let new_char = a:old_char ==# 'A' ? 'Z' : 'A'
     if new_char < a:old_char
-      let new_char = a:old_char ==# 'A' ? 'A' : 'Z'
+      let new_char = a:old_char ==# 'Z' ? 'A' : 'Z'
     endif
   endif
 
